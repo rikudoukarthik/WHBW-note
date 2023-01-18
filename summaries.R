@@ -56,12 +56,14 @@ data_NP <- read.delim("ebd_NP_relNov-2022.txt", colClasses = nms, sep = "\t", he
 data0 <- data_IN %>% 
   bind_rows(data_BT) %>% 
   bind_rows(data_NP) %>% 
-  filter(COUNTY_STATE %in% c("Darjeeling", "East Sikkim", "South Sikkim",
+  filter(COUNTY_STATE %in% c("Darjeeling", "Kalimpong",
+                             "East Sikkim", "South Sikkim",
                              "Sarpang", "Zhemgang", "Samdrup Jongkha",
                              "Purwanchal"),
-         MONTH %in% 6:8) %>% 
+         MONTH %in% 5:8) %>% 
   mutate(COUNTY_STATE = factor(COUNTY_STATE, 
-                               levels = c("Darjeeling", "East Sikkim", "South Sikkim",
+                               levels = c("Darjeeling", "Kalimpong",
+                                          "East Sikkim", "South Sikkim",
                                           "Sarpang", "Zhemgang", "Samdrup Jongkha",
                                           "Purwanchal")))
 
