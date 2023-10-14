@@ -1,11 +1,11 @@
-# load("ebd_IN_relNov-2022.RData")
+# load("ebd_IN_relAug-2023.RData")
 # 
 # data <- data %>% filter(STATE %in% c("West Bengal", "Sikkim"))
 # 
-# save(data, file = "ebd_IN-WBSK_relNov-2022.RData")
+# save(data, file = "ebd_IN-WBSK_relAug-2023.RData")
 
 
-load("ebd_IN-WBSK_relNov-2022.RData")
+load("ebd_IN-WBSK_relAug-2023.RData")
 library(tidyverse)
 library(lubridate)
 
@@ -23,11 +23,11 @@ preimp <- c("CATEGORY","EXOTIC.CODE","COMMON.NAME","OBSERVATION.COUNT",
             "NUMBER.OBSERVERS","ALL.SPECIES.REPORTED","GROUP.IDENTIFIER","SAMPLING.EVENT.IDENTIFIER",
             "TRIP.COMMENTS","SPECIES.COMMENTS", "HAS.MEDIA")
 
-nms <- names(read.delim("ebd_BT_relNov-2022.txt", nrows = 1, sep = "\t", header = T, 
+nms <- names(read.delim("ebd_BT_relAug-2023.txt", nrows = 1, sep = "\t", header = T, 
                         quote = "", stringsAsFactors = F, na.strings = c(""," ", NA)))
 nms[!(nms %in% preimp)] <- "NULL"
 nms[nms %in% preimp] <- NA
-data_BT <- read.delim("ebd_BT_relNov-2022.txt", colClasses = nms, sep = "\t", header = T, 
+data_BT <- read.delim("ebd_BT_relAug-2023.txt", colClasses = nms, sep = "\t", header = T, 
                       quote = "", stringsAsFactors = F, na.strings = c(""," ",NA)) %>% 
   mutate(COUNTY_STATE = STATE) %>% 
   # group ID and dates
@@ -37,11 +37,11 @@ data_BT <- read.delim("ebd_BT_relNov-2022.txt", colClasses = nms, sep = "\t", he
          MONTH = month(OBSERVATION.DATE),
          DAY.M = day(OBSERVATION.DATE))
 
-nms <- names(read.delim("ebd_NP_relNov-2022.txt", nrows = 1, sep = "\t", header = T, 
+nms <- names(read.delim("ebd_NP_relAug-2023.txt", nrows = 1, sep = "\t", header = T, 
                         quote = "", stringsAsFactors = F, na.strings = c(""," ", NA)))
 nms[!(nms %in% preimp)] <- "NULL"
 nms[nms %in% preimp] <- NA
-data_NP <- read.delim("ebd_NP_relNov-2022.txt", colClasses = nms, sep = "\t", header = T, 
+data_NP <- read.delim("ebd_NP_relAug-2023.txt", colClasses = nms, sep = "\t", header = T, 
                       quote = "", stringsAsFactors = F, na.strings = c(""," ",NA)) %>% 
   mutate(COUNTY_STATE = STATE) %>% 
   # group ID and dates
@@ -69,7 +69,7 @@ data0 <- data_IN %>%
 
 data1 <- data0 %>% 
   filter(ALL.SPECIES.REPORTED == 1) %>% 
-  group_by(COUNTY_STATE) %>% 
+  group_by(STATE) %>% 
   summarise(NO.LISTS = n_distinct(SAMPLING.EVENT.IDENTIFIER))
 
 data1
