@@ -6,6 +6,10 @@
 *.RData
 *.txt
 *.mp3
+*.xcf
+*.docx
+*.jpg
+manuscript/*.jpeg
 
 data/whbw_glac_distance.csv
 

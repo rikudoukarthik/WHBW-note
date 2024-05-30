@@ -41,7 +41,7 @@ mutate_aes <- function(data) {
       season == "passage" ~ glue("Passage\n(n = {n})")
     ),
     colour = case_when(
-      season == "non-breeding" ~ "purple",
+      season == "non-breeding" ~ "#B653F3",
       season == "breeding" ~ "orange",
       season == "passage" ~ "white"
     ))
@@ -90,9 +90,10 @@ whbw <- whbw_elev %>%
   mutate(ELEVATION = whbw_elev_rast %>% 
            stars::st_as_stars() %>%
            stars::st_extract(whbw_elev) %>% # 4 rows (3 points) without elev info
-           pull(1)) %>% 
+           pull(1)) %>%
+  mutate(LONGITUDE = st_coordinates(.)[, 1],
+         LATITUDE = st_coordinates(.)[, 2]) %>% 
   st_drop_geometry()
-
 
 
 whbw_season <- whbw %>% 
@@ -131,9 +132,18 @@ whbw_season_box <- x_range %>%
 
 
 whbw <- whbw %>% 
+  # splitting two passage
+  mutate(split.season = case_when(
+    season == "passage" & month < 8 ~ "passage1",
+    season == "passage" & month > 8 ~ "passage2",
+    season == "non-breeding" & month > 8 & DOY <= 0 ~ "non-breeding1",
+    season == "non-breeding" & month < 8 & DOY >= 366 ~ "non-breeding2",
+    season == "non-breeding" & month < 8 ~ "non-breeding1",
+    season == "non-breeding" & month > 8 ~ "non-breeding2",
+    TRUE ~ season
+  )) %>% 
   left_join(whbw_season_box, 
-            by = c("season" = "true.season"),
-            relationship = "many-to-many")
+            by = c("split.season" = "season"))
 
 x_range <- x_range %>% 
   group_by(month.lab) %>%
@@ -146,26 +156,21 @@ plot_glac <- ggplot() +
   geom_rect(data = whbw_season_box,
             mapping = aes(xmin = XMIN, xmax = XMAX, ymin = -Inf, ymax = Inf,
                           group = true.season, fill = season),
-            alpha = 0.3, fill = whbw_season_box$colour) +
-  geom_label(data = whbw_season_box,
-             mapping = aes(x = XMED, y = 900, label = label,
-                           group = true.season, colour = season),
-             fill = "black", colour = whbw_season_box$colour, 
-             size = 3.5) +
+            alpha = 0.4, fill = whbw_season_box$colour) +
   geom_point(data = whbw, 
              mapping = aes(DOY, dist_glac_km,
                            group = season, fill = colour),
-             colour = "black", shape = 21, alpha = 0.5) +
+             colour = "black", shape = 21, alpha = 0.6) +
   geom_smooth(data = whbw, 
               mapping = aes(DOY, dist_glac_km), 
               colour = "black",
-              method = "loess", span = 0.6) +
+              method = "loess") +
   # 100 m line
   geom_hline(yintercept = 100, linetype = "longdash", alpha = 0.5) +
   scale_fill_identity() +
   labs(x = "Month", y = "Distance from glacier (km)") +
   scale_y_continuous(breaks = seq(0, 2000, by = 100),
-                     limits = c(-20, 1000)) +
+                     limits = c(-50, 700)) +
   scale_x_continuous(limits = c(-10, 376),
                      breaks = x_range$DOY,
                      labels = x_range$month.lab) +
@@ -183,27 +188,32 @@ plot_glac <- ggplot() +
         panel.background = element_rect(colour = "black",
                                         linewidth = 1,
                                         fill = NA),
-        plot.margin = margin(1, 1, 0.5, 0.5, unit = "cm"))
+        plot.margin = margin(0, 0.5, 0.25, 0.25, unit = "cm"))
 
 plot_elev <- ggplot() +  
   geom_rect(data = whbw_season_box,
             mapping = aes(xmin = XMIN, xmax = XMAX, ymin = -Inf, ymax = Inf,
                           group = true.season, fill = season),
-            alpha = 0.3, fill = whbw_season_box$colour) +
+            alpha = 0.4, fill = whbw_season_box$colour) +
+  geom_label(data = whbw_season_box,
+             mapping = aes(x = XMED, y = 5000, label = label,
+                           group = true.season, colour = season),
+             fill = "black", colour = whbw_season_box$colour, 
+             size = 3.5, fontface = "bold") +
   geom_point(data = whbw, 
              mapping = aes(DOY, ELEVATION,
                            group = season, fill = colour),
-             colour = "black", shape = 21, alpha = 0.5) +
+             colour = "black", shape = 21, alpha = 0.6) +
   geom_smooth(data = whbw, 
               mapping = aes(DOY, ELEVATION), 
               colour = "black",
-              method = "loess", span = 0.6) +
+              method = "loess", span = 0.4) +
   # 3000 m asl line
   geom_hline(yintercept = 3000, linetype = "longdash", alpha = 0.5) +
   scale_fill_identity() +
   labs(x = "Month", y = "Elevation (m asl)") +
-  scale_y_continuous(breaks = seq(0, 5000, by = 500),
-                     limits = c(-350, 5000)) +
+  scale_y_continuous(breaks = seq(0, 6000, by = 500),
+                     limits = c(-350, 5499)) +
   scale_x_continuous(limits = c(-10, 376),
                      breaks = x_range$DOY,
                      labels = x_range$month.lab) +
@@ -221,13 +231,13 @@ plot_elev <- ggplot() +
         panel.background = element_rect(colour = "black",
                                         linewidth = 1,
                                         fill = NA),
-        plot.margin = margin(1, 1, 0.5, 0.5, unit = "cm"))
+        plot.margin = margin(0.5, 0.5, 0, 0.25, unit = "cm"))
 
-plot_patch <- plot_glac / plot_elev &
+plot_patch <- plot_elev / plot_glac &
   plot_annotation(tag_levels = "A")
 
 
 
-ggsave(filename = "whbw_seasonality.jpeg", plot = plot_patch,
+ggsave(filename = "fig_seasonality.jpeg", plot = plot_patch,
        device = "jpeg" , height = 30, width = 25, dpi = 300, units = "cm") 
 
